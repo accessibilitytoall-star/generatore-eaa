@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Generatore di Dichiarazione di Accessibilità + Report di Conformità — AccessibilityToAll</title>
+<meta name="description" content="Strumento gratuito di AccessibilityToAll: genera la Dichiarazione di Accessibilità (EAA / Legge Stanca) e il Report di Conformità WCAG 2.1 AA del tuo sito.">
+<style>
+  :root{
+    --blu:#0C6CD3; --blu-scuro:#08488C; --blu-piu-scuro:#063A78;
+    --arancio:#D9620A; --arancio-chiaro:#EF8216;
+    --ink:#1A1A1A; --ink-soft:#4A4A4A; --line:#CBD8EA;
+    --paper:#FFFFFF; --soft:#F2F7FD; --soft2:#E9F1FB;
+    --ok:#1F7A43; --ok-bg:#E3F4EA; --warn:#9A5B00; --warn-bg:#FBEFD6; --bad:#B0231C; --bad-bg:#FBE4E2;
+    --body:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    --shadow:0 6px 20px -12px rgba(6,40,80,.5);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--body);font-size:17px;line-height:1.55;color:var(--ink);background:var(--soft)}
+  .skip{position:absolute;left:-999px;top:0;background:var(--blu);color:#fff;padding:.6rem 1rem;z-index:100;border-radius:0 0 8px 0}
+  .skip:focus{left:0}
+  a{color:var(--blu-scuro)}
+  :focus-visible{outline:3px solid var(--arancio);outline-offset:2px}
+  header.hero{background:linear-gradient(135deg,var(--blu),var(--blu-piu-scuro));color:#fff;padding:30px 18px 26px}
+  .wrap{max-width:920px;margin:0 auto;padding:0 18px}
+  header.hero .wrap{padding:0 18px}
+  .kick{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:#FFD9AE;font-weight:700;margin:0 0 8px}
+  header.hero h1{font-size:clamp(24px,5vw,38px);line-height:1.12;margin:0 0 10px}
+  header.hero p.lead{margin:0;max-width:62ch;color:#EAF1FB}
+  main{padding:26px 0 60px}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:20px 20px;margin:0 0 22px;box-shadow:var(--shadow)}
+  .card > h2{margin:0 0 4px;font-size:21px;color:var(--blu-piu-scuro);display:flex;align-items:center;gap:10px}
+  .card > p.hint{margin:.2em 0 16px;color:var(--ink-soft);font-size:15.5px}
+  .stepnum{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:var(--arancio);color:#fff;font-size:16px;font-weight:700;flex:0 0 auto}
+  label.field{display:block;margin:0 0 14px}
+  label.field > span.lab{display:block;font-weight:600;margin-bottom:5px}
+  label.field .req{color:var(--bad);font-weight:700}
+  .help{font-weight:400;color:var(--ink-soft);font-size:14px;display:block;margin-top:2px}
+  input[type=text],input[type=url],input[type=email],input[type=date],select,textarea{
+    width:100%;border:1.5px solid var(--line);border-radius:9px;padding:11px 12px;font-family:inherit;font-size:16px;background:#fff;color:var(--ink)}
+  textarea{min-height:90px;resize:vertical}
+  .row{display:flex;gap:14px;flex-wrap:wrap}
+  .row > *{flex:1 1 220px}
+  fieldset{border:1.5px solid var(--line);border-radius:11px;padding:12px 14px;margin:0 0 16px}
+  legend{font-weight:700;padding:0 8px;color:var(--blu-piu-scuro)}
+  .radio,.check{display:flex;gap:10px;align-items:flex-start;padding:9px 8px;border-radius:8px;cursor:pointer}
+  .radio:hover,.check:hover{background:var(--soft)}
+  .radio input,.check input{margin-top:3px;width:20px;height:20px;flex:0 0 auto}
+  .btn{display:inline-flex;align-items:center;gap:9px;border:none;border-radius:10px;padding:13px 22px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;background:var(--arancio);color:#fff;box-shadow:var(--shadow)}
+  .btn:hover{background:var(--arancio-chiaro)}
+  .btn.ghost{background:#fff;color:var(--blu-scuro);border:1.5px solid var(--blu)}
+  .btn.ghost:hover{background:var(--soft2)}
+  .btn.blu{background:var(--blu)}
+  .btn.blu:hover{background:var(--blu-scuro)}
+  .btns{display:flex;gap:12px;flex-wrap:wrap;margin-top:6px}
+  .mode-grid{display:flex;gap:14px;flex-wrap:wrap}
+  .mode{flex:1 1 240px;border:2px solid var(--line);border-radius:12px;padding:16px;cursor:pointer;background:#fff}
+  .mode:hover{border-color:var(--blu)}
+  .mode input{position:absolute;opacity:0;width:1px;height:1px}
+  .mode.sel{border-color:var(--arancio);background:var(--soft)}
+  .mode h3{margin:0 0 6px;font-size:17px;color:var(--blu-piu-scuro)}
+  .mode p{margin:0;font-size:14.5px;color:var(--ink-soft)}
+  .scan-status{margin:14px 0 0;padding:12px 14px;border-radius:10px;font-size:15px;display:none}
+  .scan-status.show{display:block}
+  .scan-status.info{background:var(--soft2);border:1px solid var(--line)}
+  .scan-status.ok{background:var(--ok-bg);border:1px solid #BfE4CC;color:#0F5A2E}
+  .scan-status.warn{background:var(--warn-bg);border:1px solid #EAD6A8;color:#6F4200}
+  .scan-status.bad{background:var(--bad-bg);border:1px solid #F0C2BE;color:#7E1812}
+  .hidden{display:none !important}
+  .findings{list-style:none;margin:14px 0 0;padding:0}
+  .findings li{border:1px solid var(--line);border-left-width:6px;border-radius:9px;padding:10px 13px;margin:0 0 9px;background:#fff}
+  .findings li.alta{border-left-color:var(--bad)} .findings li.media{border-left-color:var(--warn)} .findings li.bassa{border-left-color:var(--blu)}
+  .findings .sev{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:2px 8px;border-radius:999px;margin-right:8px}
+  .sev.alta{background:var(--bad-bg);color:var(--bad)} .sev.media{background:var(--warn-bg);color:var(--warn)} .sev.bassa{background:var(--soft2);color:var(--blu-scuro)}
+  .findings .crit{display:block;font-size:13.5px;color:var(--ink-soft);margin-top:3px}
+  .pill{display:inline-block;font-size:13px;font-weight:700;padding:4px 11px;border-radius:999px}
+  .pill.conforme{background:var(--ok-bg);color:var(--ok)} .pill.parziale{background:var(--warn-bg);color:var(--warn)} .pill.non{background:var(--bad-bg);color:var(--bad)}
+  /* documenti generati */
+  #output{margin-top:8px}
+  .doc{background:#fff;border:1px solid var(--line);border-radius:12px;padding:30px 32px;margin:0 0 22px;box-shadow:var(--shadow)}
+  .doc h2.doctitle{font-size:24px;color:var(--blu-piu-scuro);margin:0 0 4px;border-bottom:3px solid var(--arancio);padding-bottom:8px}
+  .doc h3{color:var(--blu-scuro);margin:22px 0 6px;font-size:18px}
+  .doc table{border-collapse:collapse;width:100%;margin:10px 0;font-size:15px}
+  .doc th,.doc td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  .doc th{background:var(--soft2)}
+  .doc .meta-list{list-style:none;padding:0;margin:0 0 8px}
+  .doc .meta-list li{margin:3px 0}
+  .doc .small{color:var(--ink-soft);font-size:14px}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 16px}
+  .footer{color:var(--ink-soft);font-size:14px;border-top:1px solid var(--line);margin-top:30px;padding-top:16px}
+  .badge-a2a{font-weight:700;color:var(--blu-scuro)}
+  @media print{
+    body{background:#fff;color:#000;font-size:12pt}
+    header.hero,.no-print,.card,.toolbar,.skip{display:none !important}
+    main{padding:0}
+    #output{margin:0}
+    .doc{box-shadow:none;border:none;border-radius:0;padding:0;page-break-after:always;margin:0 0 0}
+    .doc h2.doctitle{color:#000;border-color:#000}
+    .doc h3{color:#000}
+    .doc th{background:#eee}
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#contenuto">Salta al contenuto</a>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="kick">AccessibilityToAll · Strumento gratuito</p>
+    <h1>Generatore di Dichiarazione di Accessibilità + Report di Conformità</h1>
+    <p class="lead">Crea in pochi minuti la <strong>Dichiarazione di Accessibilità</strong> richiesta da European Accessibility Act e Legge Stanca, più il <strong>Report di Conformità</strong> tecnico WCAG&nbsp;2.1&nbsp;AA. Scansione automatica del sito oppure compilazione guidata. Non è una consulenza legale: è una bozza professionale da verificare.</p>
+  </div>
+</header>
+
+<main id="contenuto" class="wrap">
+
+  <!-- STEP 1 · MODALITÀ -->
+  <section class="card no-print" aria-labelledby="h-mode">
+    <h2 id="h-mode"><span class="stepnum">1</span> Da dove partiamo?</h2>
+    <p class="hint">Scegli come fornire i dati del sito. Potrai sempre modificare tutto a mano prima di generare i documenti.</p>
+    <div class="mode-grid" role="radiogroup" aria-label="Modalità di partenza">
+      <label class="mode sel" id="m-scan-l">
+        <input type="radio" name="mode" value="scan" checked>
+        <h3>🔎 Scansione automatica</h3>
+        <p>Inserisci l'indirizzo del sito (o incolla il codice HTML della pagina). Lo strumento esegue i controlli automatizzabili e pre-compila lo stato di conformità e il report.</p>
+      </label>
+      <label class="mode" id="m-man-l">
+        <input type="radio" name="mode" value="manuale">
+        <h3>✍️ Compilazione manuale</h3>
+        <p>Compili tu i campi della dichiarazione e del report. Adatto se conosci già lo stato di accessibilità del sito.</p>
+      </label>
+    </div>
+
+    <div id="scanBox" class="card" style="margin:16px 0 0;background:var(--soft)">
+      <label class="field" for="scanUrl"><span class="lab">Indirizzo del sito da analizzare</span>
+        <input type="url" id="scanUrl" placeholder="https://www.esempio.it" autocomplete="url">
+        <span class="help">Il browser può non riuscire a leggere siti esterni (blocco di sicurezza CORS). In quel caso usa "Incolla HTML" qui sotto.</span>
+      </label>
+      <div class="btns">
+        <button type="button" class="btn blu" id="btnScan">Analizza il sito</button>
+        <button type="button" class="btn ghost" id="btnPasteToggle">Incolla / carica l'HTML</button>
+      </div>
+      <div id="pasteWrap" class="hidden" style="margin-top:14px">
+        <label class="field" for="htmlPaste"><span class="lab">Incolla qui il codice HTML della pagina</span>
+          <span class="help">Sul sito da analizzare: tasto destro → «Visualizza sorgente pagina», seleziona tutto, copia e incolla qui. Oppure carica il file .html.</span>
+          <textarea id="htmlPaste" placeholder="<!DOCTYPE html> ..."></textarea>
+        </label>
+        <div class="row">
+          <input type="file" id="htmlFile" accept=".html,.htm,text/html" aria-label="Carica un file HTML">
+          <button type="button" class="btn blu" id="btnScanPasted">Analizza l'HTML incollato</button>
+        </div>
+      </div>
+      <div id="scanStatus" class="scan-status" role="status" aria-live="polite"></div>
+      <div id="scanFindings" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- STEP 2 · DATI SOGGETTO -->
+  <section class="card" aria-labelledby="h-sogg">
+    <h2 id="h-sogg"><span class="stepnum">2</span> Dati del soggetto e del sito</h2>
+    <p class="hint">Questi dati compaiono in testa alla Dichiarazione.</p>
+    <div class="row">
+      <label class="field" for="ente"><span class="lab">Nome del soggetto / ente <span class="req" aria-hidden="true">*</span></span>
+        <input type="text" id="ente" required placeholder="Es. Rossi Srl"></label>
+      <label class="field" for="sito"><span class="lab">Indirizzo del sito o app <span class="req" aria-hidden="true">*</span></span>
+        <input type="url" id="sito" required placeholder="https://www.rossi.it"></label>
+    </div>
+    <div class="row">
+      <label class="field" for="tipo"><span class="lab">Tipo di soggetto</span>
+        <select id="tipo">
+          <option value="operatore economico privato">Operatore economico privato</option>
+          <option value="microimpresa">Microimpresa</option>
+          <option value="pubblica amministrazione">Pubblica amministrazione</option>
+          <option value="altro soggetto obbligato">Altro soggetto obbligato</option>
+        </select></label>
+      <label class="field" for="piva"><span class="lab">P.IVA / Codice fiscale</span>
+        <input type="text" id="piva" placeholder="Facoltativo"></label>
+    </div>
+    <div class="row">
+      <label class="field" for="ambito"><span class="lab">Ambito di applicazione</span>
+        <input type="text" id="ambito" placeholder="Es. sito web e area clienti"></label>
+      <label class="field" for="dataval"><span class="lab">Data della dichiarazione</span>
+        <input type="date" id="dataval"></label>
+    </div>
+  </section>
+
+  <!-- STEP 3 · STATO DI CONFORMITÀ -->
+  <section class="card" aria-labelledby="h-stato">
+    <h2 id="h-stato"><span class="stepnum">3</span> Stato di conformità</h2>
+    <p class="hint">Indica il livello di conformità rispetto a WCAG 2.1 AA / EN 301 549. <span id="statoSuggerito"></span></p>
+    <fieldset>
+      <legend>Il sito è…</legend>
+      <label class="radio"><input type="radio" name="stato" value="conforme"> <span><strong>Conforme</strong> — rispetta tutti i requisiti</span></label>
+      <label class="radio"><input type="radio" name="stato" value="parzialmente conforme" checked> <span><strong>Parzialmente conforme</strong> — non conforme su alcuni punti elencati sotto</span></label>
+      <label class="radio"><input type="radio" name="stato" value="non conforme"> <span><strong>Non conforme</strong> — non rispetta la maggior parte dei requisiti</span></label>
+    </fieldset>
+    <label class="field" for="nonacc"><span class="lab">Contenuti / sezioni non accessibili</span>
+      <span class="help">Un elemento per riga. La scansione li pre-compila; puoi correggerli.</span>
+      <textarea id="nonacc" placeholder="Es.&#10;Alcune immagini prive di testo alternativo&#10;Moduli con campi senza etichetta"></textarea></label>
+    <label class="field" for="motivi"><span class="lab">Motivazioni dell'eventuale non conformità</span>
+      <span class="help">Es. onere sproporzionato, contenuti di terze parti, contenuti fuori ambito.</span>
+      <textarea id="motivi" placeholder="Facoltativo"></textarea></label>
+  </section>
+
+  <!-- STEP 4 · CANALE DI FEEDBACK -->
+  <section class="card" aria-labelledby="h-fb">
+    <h2 id="h-fb"><span class="stepnum">4</span> Meccanismo di feedback <span class="req" aria-hidden="true">*</span></h2>
+    <p class="hint">Obbligatorio: l'utente deve poter segnalare le barriere e chiedere i contenuti in forma accessibile.</p>
+    <div class="row">
+      <label class="field" for="fbemail"><span class="lab">Email / PEC per le segnalazioni <span class="req" aria-hidden="true">*</span></span>
+        <input type="email" id="fbemail" placeholder="accessibilita@rossi.it"></label>
+      <label class="field" for="fbtempi"><span class="lab">Tempo di risposta dichiarato</span>
+        <input type="text" id="fbtempi" placeholder="Es. entro 30 giorni"></label>
+    </div>
+    <label class="field" for="fbnote"><span class="lab">Altri canali (modulo, telefono…)</span>
+      <input type="text" id="fbnote" placeholder="Facoltativo"></label>
+  </section>
+
+  <!-- STEP 5 · GENERA -->
+  <section class="card no-print" aria-labelledby="h-gen">
+    <h2 id="h-gen"><span class="stepnum">5</span> Genera i documenti</h2>
+    <p class="hint">Vengono creati due documenti: la Dichiarazione di Accessibilità e il Report di Conformità tecnico.</p>
+    <div class="btns">
+      <button type="button" class="btn" id="btnGen">Genera Dichiarazione + Report</button>
+    </div>
+    <p id="genErr" class="scan-status bad" role="alert"></p>
+  </section>
+
+  <!-- OUTPUT -->
+  <div id="output" aria-live="polite"></div>
+
+  <p class="footer">Creato con il Generatore di <span class="badge-a2a">AccessibilityToAll</span>. I documenti prodotti sono una bozza professionale basata su controlli automatizzabili e sui dati inseriti: i criteri WCAG verificabili solo manualmente (es. contrasto reale, sottotitoli, significato del testo alternativo) vanno controllati da una persona. Per una verifica completa e a norma, <a href="https://www.accessibilitytoall.com">parla con AccessibilityToAll</a>.</p>
+</main>
+
+<script>
+"use strict";
+(function(){
+  var $=function(s){return document.querySelector(s);};
+  var byName=function(n){return document.querySelector('input[name="'+n+'"]:checked');};
+  // data odierna
+  $('#dataval').value=new Date().toISOString().slice(0,10);
+
+  // ---- modalità ----
+  var scanBox=$('#scanBox');
+  document.querySelectorAll('input[name="mode"]').forEach(function(r){
+    r.addEventListener('change',function(){
+      $('#m-scan-l').classList.toggle('sel', $('#m-scan-l input').checked);
+      $('#m-man-l').classList.toggle('sel', $('#m-man-l input').checked);
+      scanBox.classList.toggle('hidden', byName('mode').value!=='scan');
+    });
+  });
+
+  $('#btnPasteToggle').addEventListener('click',function(){
+    $('#pasteWrap').classList.toggle('hidden');
+  });
+
+  // ---- scanner ----
+  var CHECKS=[
+    {sev:'alta', crit:'WCAG 3.1.1 — Lingua della pagina', test:function(d){return !d.documentElement.getAttribute('lang');},
+      msg:'Manca l’attributo di lingua (lang) sulla pagina'},
+    {sev:'media', crit:'WCAG 2.4.2 — Titolo della pagina', test:function(d){var t=d.querySelector('title');return !t||!t.textContent.trim();},
+      msg:'La pagina non ha un titolo (<title>) significativo'},
+    {sev:'alta', crit:'WCAG 1.1.1 — Contenuti non testuali', count:function(d){var n=0;d.querySelectorAll('img').forEach(function(i){if(!i.hasAttribute('alt'))n++;});return n;},
+      msg:function(n){return n+' immagine/i prive di testo alternativo (alt)';}},
+    {sev:'alta', crit:'WCAG 1.3.1 / 3.3.2 — Etichette dei campi', count:function(d){
+        var n=0;d.querySelectorAll('input,select,textarea').forEach(function(f){
+          var ty=(f.getAttribute('type')||'').toLowerCase(); if(ty==='hidden'||ty==='submit'||ty==='button')return;
+          var id=f.getAttribute('id'); var lab=id&&d.querySelector('label[for="'+(window.CSS&&CSS.escape?CSS.escape(id):id)+'"]');
+          if(!lab && !f.getAttribute('aria-label') && !f.getAttribute('aria-labelledby') && !f.closest('label')) n++;
+        });return n;},
+      msg:function(n){return n+' campo/i di modulo senza etichetta associata';}},
+    {sev:'media', crit:'WCAG 1.3.1 / 2.4.6 — Struttura dei titoli', test:function(d){return d.querySelectorAll('h1').length===0 && d.querySelector('body');},
+      msg:'Nessun titolo principale <h1> nella pagina'},
+    {sev:'bassa', crit:'WCAG 1.3.1 — Regioni/landmark', test:function(d){return !d.querySelector('main,[role=main]');},
+      msg:'Manca la regione principale <main> (utile per gli screen reader)'},
+    {sev:'media', crit:'WCAG 2.4.4 / 4.1.2 — Link e pulsanti', count:function(d){var n=0;
+        d.querySelectorAll('a,button').forEach(function(e){
+          var txt=(e.textContent||'').trim();
+          var al=e.getAttribute('aria-label')||e.getAttribute('title');
+          var img=e.querySelector('img[alt]'); var imgAlt=img&&img.getAttribute('alt').trim();
+          if(!txt && !al && !imgAlt) n++;
+        });return n;},
+      msg:function(n){return n+' link/pulsante/i senza testo accessibile';}},
+    {sev:'media', crit:'WCAG 4.1.2 — Iframe con titolo', count:function(d){var n=0;d.querySelectorAll('iframe').forEach(function(f){if(!f.getAttribute('title'))n++;});return n;},
+      msg:function(n){return n+' iframe senza attributo title';}},
+    {sev:'bassa', crit:'WCAG 1.3.1 — Tabelle dati', count:function(d){var n=0;d.querySelectorAll('table').forEach(function(t){if(!t.querySelector('th'))n++;});return n;},
+      msg:function(n){return n+' tabella/e senza intestazioni <th>';}}
+  ];
+  var MANUAL=[
+    {sev:'media', crit:'WCAG 1.4.3 — Contrasto', msg:'Contrasto dei colori: da verificare manualmente (non rilevabile in automatico in modo affidabile)'},
+    {sev:'media', crit:'WCAG 1.2.2 / 1.2.5 — Media', msg:'Sottotitoli e audiodescrizioni dei video: da verificare manualmente'},
+    {sev:'bassa', crit:'WCAG 1.1.1 — Qualità degli alt', msg:'Il testo alternativo presente va comunque controllato: deve descrivere davvero l’immagine'}
+  ];
+
+  function analyze(htmlString){
+    var doc;
+    try{ doc=new DOMParser().parseFromString(htmlString,'text/html'); }
+    catch(e){ return null; }
+    var found=[];
+    CHECKS.forEach(function(c){
+      if(c.count){ var n=c.count(doc); if(n>0) found.push({sev:c.sev,crit:c.crit,msg:c.msg(n)}); }
+      else if(c.test && c.test(doc)){ found.push({sev:c.sev,crit:c.crit,msg:c.msg}); }
+    });
+    return found;
+  }
+
+  function showFindings(found){
+    var box=$('#scanFindings');
+    var auto=found.slice();
+    var html='<ul class="findings">';
+    var order={alta:0,media:1,bassa:2};
+    auto.sort(function(a,b){return order[a.sev]-order[b.sev];});
+    auto.forEach(function(f){
+      html+='<li class="'+f.sev+'"><span class="sev '+f.sev+'">'+f.sev+'</span>'+f.msg+'<span class="crit">'+f.crit+'</span></li>';
+    });
+    MANUAL.forEach(function(f){
+      html+='<li class="'+f.sev+'"><span class="sev '+f.sev+'">da verificare</span>'+f.msg+'<span class="crit">'+f.crit+'</span></li>';
+    });
+    html+='</ul>';
+    box.innerHTML='<h3 style="color:var(--blu-piu-scuro);font-size:17px;margin:16px 0 0">Risultati della scansione</h3>'+html;
+    // pre-compila stato + lista + report
+    prefill(found);
+  }
+
+  function prefill(found){
+    var critical=found.filter(function(f){return f.sev==='alta';}).length;
+    var total=found.length;
+    var stato = critical>=2 ? 'non conforme' : (total>0 ? 'parzialmente conforme' : 'conforme');
+    document.querySelectorAll('input[name="stato"]').forEach(function(r){ r.checked=(r.value===stato); });
+    $('#statoSuggerito').innerHTML='La scansione suggerisce: <span class="pill '+(stato==='conforme'?'conforme':stato==='non conforme'?'non':'parziale')+'">'+stato+'</span>';
+    // lista non accessibili = messaggi automatici (alta+media)
+    var righe=found.filter(function(f){return f.sev!=='bassa';}).map(function(f){return '• '+f.msg;});
+    if(righe.length) $('#nonacc').value=righe.join('\n');
+    // salva findings per il report
+    window.__SCAN__={found:found, manual:MANUAL, stato:stato, when:new Date()};
+  }
+
+  function setStatus(kind,msg){
+    var s=$('#scanStatus'); s.className='scan-status show '+kind; s.textContent=msg;
+  }
+
+  $('#btnScan').addEventListener('click',function(){
+    var url=$('#scanUrl').value.trim();
+    if(!url){ setStatus('warn','Inserisci prima l’indirizzo del sito.'); return; }
+    if(!$('#sito').value) $('#sito').value=url;
+    setStatus('info','Provo a leggere il sito… (se è esterno il browser potrebbe bloccarlo).');
+    fetch(url,{mode:'cors'}).then(function(r){return r.text();}).then(function(t){
+      var f=analyze(t);
+      if(f){ setStatus('ok','Sito letto e analizzato. Controlla i risultati e correggi dove serve.'); showFindings(f); }
+      else setStatus('bad','Non sono riuscito ad analizzare la pagina.');
+    }).catch(function(){
+      setStatus('warn','Il browser ha bloccato la lettura del sito esterno (CORS). Usa «Incolla / carica l’HTML»: apri il sito, «Visualizza sorgente pagina», copia tutto e incollalo.');
+      $('#pasteWrap').classList.remove('hidden');
+      $('#htmlPaste').focus();
+    });
+  });
+
+  $('#btnScanPasted').addEventListener('click',function(){
+    var t=$('#htmlPaste').value.trim();
+    if(!t){ setStatus('warn','Incolla prima il codice HTML della pagina.'); return; }
+    var f=analyze(t);
+    if(f){ setStatus('ok','HTML analizzato. Controlla i risultati e correggi dove serve.'); showFindings(f); }
+    else setStatus('bad','Non sono riuscito ad analizzare l’HTML incollato.');
+  });
+
+  $('#htmlFile').addEventListener('change',function(e){
+    var file=e.target.files[0]; if(!file) return;
+    var rd=new FileReader();
+    rd.onload=function(){ $('#htmlPaste').value=rd.result; setStatus('info','File caricato. Premi «Analizza l’HTML incollato».'); };
+    rd.readAsText(file);
+  });
+
+  // ---- generazione documenti ----
+  function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function nl2li(s){ return String(s||'').split('\n').map(function(x){return x.replace(/^[•\-\s]+/,'').trim();}).filter(Boolean); }
+  function dataIt(iso){ if(!iso) return '—'; var p=iso.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
+
+  $('#btnGen').addEventListener('click',function(){
+    var err=[];
+    var ente=$('#ente').value.trim(), sito=$('#sito').value.trim(), fbemail=$('#fbemail').value.trim();
+    if(!ente) err.push('il nome del soggetto');
+    if(!sito) err.push('l’indirizzo del sito');
+    if(!fbemail) err.push('l’email per le segnalazioni');
+    var ge=$('#genErr');
+    if(err.length){ ge.className='scan-status bad show'; ge.textContent='Per generare i documenti mancano: '+err.join(', ')+'.';
+      if(ge.scrollIntoView) ge.scrollIntoView({behavior:'smooth',block:'center'}); return; }
+    ge.className='scan-status'; ge.textContent='';
+
+    var stato=byName('stato').value;
+    var tipo=$('#tipo').value, piva=$('#piva').value.trim(), ambito=$('#ambito').value.trim()||'sito web';
+    var dataval=$('#dataval').value, fbtempi=$('#fbtempi').value.trim()||'nel più breve tempo possibile';
+    var fbnote=$('#fbnote').value.trim(), motivi=$('#motivi').value.trim();
+    var nonacc=nl2li($('#nonacc').value);
+    var statoPill = stato==='conforme'?'conforme':(stato==='non conforme'?'non':'parziale');
+
+    // --- Dichiarazione ---
+    var dich='<div class="doc" id="docDich"><h2 class="doctitle">Dichiarazione di Accessibilità</h2>'+
+      '<p class="small">Resa ai sensi dell’European Accessibility Act (Dir. UE 2019/882) e della Legge 4/2004 (Legge Stanca) e successive modifiche.</p>'+
+      '<ul class="meta-list">'+
+      '<li><strong>Soggetto:</strong> '+esc(ente)+(piva?' — '+esc(piva):'')+'</li>'+
+      '<li><strong>Tipo di soggetto:</strong> '+esc(tipo)+'</li>'+
+      '<li><strong>Sito / applicazione:</strong> '+esc(sito)+'</li>'+
+      '<li><strong>Ambito di applicazione:</strong> '+esc(ambito)+'</li>'+
+      '<li><strong>Data della dichiarazione:</strong> '+dataIt(dataval)+'</li>'+
+      '</ul>'+
+      '<h3>Stato di conformità</h3>'+
+      '<p>Il '+esc(ambito)+' è <span class="pill '+statoPill+'">'+stato+'</span> rispetto ai requisiti delle <strong>WCAG 2.1 livello AA</strong> e della norma <strong>EN 301 549</strong>.</p>';
+    if(stato!=='conforme'){
+      dich+='<h3>Contenuti non accessibili</h3>';
+      if(nonacc.length){ dich+='<ul>'+nonacc.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>'; }
+      else dich+='<p class="small">Nessun elemento specificato.</p>';
+      if(motivi){ dich+='<h3>Motivazioni</h3><p>'+esc(motivi)+'</p>'; }
+    }
+    dich+='<h3>Meccanismo di feedback</h3>'+
+      '<p>Chiunque riscontri barriere all’accessibilità o desideri ricevere contenuti in forma accessibile può scrivere a <strong>'+esc(fbemail)+'</strong>. '+
+      'Risposta '+esc(fbtempi)+'.'+(fbnote?' Altri canali: '+esc(fbnote)+'.':'')+'</p>'+
+      '<h3>Modalità di redazione</h3>'+
+      '<p class="small">Dichiarazione predisposta il '+dataIt(dataval)+' tramite il Generatore di AccessibilityToAll, sulla base di una autovalutazione supportata da controlli automatizzabili. Si raccomanda una verifica manuale per i criteri non rilevabili in automatico.</p>'+
+      '</div>';
+
+    // --- Report ---
+    var scan=window.__SCAN__;
+    var rep='<div class="doc" id="docRep"><h2 class="doctitle">Report di Conformità — WCAG 2.1 AA / EN 301 549</h2>'+
+      '<ul class="meta-list"><li><strong>Soggetto:</strong> '+esc(ente)+'</li>'+
+      '<li><strong>Sito analizzato:</strong> '+esc(sito)+'</li>'+
+      '<li><strong>Data analisi:</strong> '+dataIt(dataval)+'</li>'+
+      '<li><strong>Metodo:</strong> controlli automatizzabili'+(scan?' (scansione eseguita)':' + autovalutazione')+' + verifica manuale raccomandata</li></ul>';
+    rep+='<h3>Esiti rilevati</h3>';
+    var rows=[];
+    if(scan && scan.found.length){
+      scan.found.forEach(function(f){ rows.push({sev:f.sev,crit:f.crit,esito:f.msg,prio:f.sev==='alta'?'Alta':f.sev==='media'?'Media':'Bassa'}); });
+    } else if(nonacc.length){
+      nonacc.forEach(function(x){ rows.push({sev:'media',crit:'Da classificare',esito:x,prio:'Media'}); });
+    }
+    (scan?scan.manual:MANUAL).forEach(function(f){ rows.push({sev:f.sev,crit:f.crit,esito:f.msg+' (verifica manuale)',prio:f.sev==='alta'?'Alta':'Media'}); });
+    if(!rows.length){ rep+='<p class="small">Nessun problema rilevato dai controlli automatizzabili. Resta raccomandata la verifica manuale dei criteri non automatizzabili.</p>'; }
+    else{
+      rep+='<table><thead><tr><th>Criterio WCAG / EN 301 549</th><th>Esito</th><th>Priorità</th></tr></thead><tbody>';
+      var ord={alta:0,media:1,bassa:2};
+      rows.sort(function(a,b){return ord[a.sev]-ord[b.sev];});
+      rows.forEach(function(r){ rep+='<tr><td>'+esc(r.crit)+'</td><td>'+esc(r.esito)+'</td><td>'+r.prio+'</td></tr>'; });
+      rep+='</tbody></table>';
+    }
+    rep+='<h3>Priorità di intervento e tempi stimati</h3>'+
+      '<p class="small">Priorità <strong>Alta</strong>: barriere che impediscono l’uso (es. campi senza etichetta, immagini senza alt) — intervento immediato (entro 30 giorni). '+
+      'Priorità <strong>Media</strong>: barriere che ostacolano ma non bloccano — entro 60-90 giorni. '+
+      'Priorità <strong>Bassa</strong>: miglioramenti — pianificabili.</p>'+
+      '<p class="small">Questo report copre i criteri verificabili in automatico. Una verifica WCAG completa richiede test manuali e con tecnologie assistive: <strong>AccessibilityToAll</strong> può eseguirla.</p>'+
+      '</div>';
+
+    var toolbar='<div class="toolbar no-print">'+
+      '<button type="button" class="btn" onclick="window.print()">🖨️ Stampa / Salva in PDF</button>'+
+      '<button type="button" class="btn ghost" id="btnCopy">Copia il testo</button></div>';
+
+    var out=$('#output');
+    out.innerHTML=toolbar+dich+rep;
+    if(out.scrollIntoView) out.scrollIntoView({behavior:'smooth',block:'start'});
+    $('#btnCopy').addEventListener('click',function(){
+      var tmp=document.createElement('div'); tmp.innerHTML=dich+rep;
+      var txt=tmp.innerText;
+      if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ $('#btnCopy').textContent='Copiato ✓'; }); }
+    });
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Genera gratis la tua Dichiarazione di Accessibilità EAA — AccessibilityToAll</title>
+<meta name="description" content="Strumento gratuito: genera la Dichiarazione di Accessibilità (EAA / Legge Stanca) e il Report di Conformità WCAG del tuo sito. Da chi l'accessibilità la vive davvero.">
+<style>
+  :root{
+    --blu:#0C6CD3; --blu-scuro:#08488C; --blu-piu-scuro:#063A78;
+    --arancio:#D9620A; --arancio-chiaro:#EF8216;
+    --ink:#1A1A1A; --ink-soft:#4A4A4A; --line:#CBD8EA;
+    --paper:#FFFFFF; --soft:#F2F7FD; --soft2:#E9F1FB;
+    --ok:#1F7A43; --ok-bg:#E3F4EA;
+    --body:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    --shadow:0 8px 26px -14px rgba(6,40,80,.55);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--body);font-size:17px;line-height:1.55;color:var(--ink);background:var(--soft)}
+  .skip{position:absolute;left:-999px;top:0;background:var(--blu);color:#fff;padding:.6rem 1rem;z-index:100;border-radius:0 0 8px 0}
+  .skip:focus{left:0}
+  a{color:var(--blu-scuro)}
+  :focus-visible{outline:3px solid var(--arancio);outline-offset:2px}
+  .wrap{max-width:920px;margin:0 auto;padding:0 18px}
+  header.hero{background:linear-gradient(135deg,var(--blu),var(--blu-piu-scuro));color:#fff;padding:46px 18px 40px}
+  .kick{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:#FFD9AE;font-weight:700;margin:0 0 10px}
+  header.hero h1{font-size:clamp(26px,5.4vw,42px);line-height:1.1;margin:0 0 14px;max-width:20ch}
+  header.hero p.lead{margin:0 0 22px;max-width:60ch;color:#EAF1FB;font-size:19px}
+  .btn{display:inline-flex;align-items:center;gap:10px;border:none;border-radius:11px;padding:15px 26px;font-size:17px;font-weight:700;font-family:inherit;cursor:pointer;background:var(--arancio);color:#fff;box-shadow:var(--shadow);text-decoration:none}
+  .btn:hover{background:var(--arancio-chiaro)}
+  .btn.big{font-size:19px;padding:17px 32px}
+  main{padding:40px 0 60px}
+  .grid3{display:flex;gap:18px;flex-wrap:wrap;margin:0 0 36px}
+  .pt{flex:1 1 240px;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:20px;box-shadow:var(--shadow)}
+  .pt h3{margin:0 0 6px;color:var(--blu-piu-scuro);font-size:18px}
+  .pt p{margin:0;color:var(--ink-soft);font-size:15.5px}
+  .pt .ico{font-size:26px;line-height:1}
+  section.block{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:28px;margin:0 0 28px;box-shadow:var(--shadow)}
+  section.block h2{margin:0 0 12px;color:var(--blu-piu-scuro);font-size:23px}
+  ul.docs{list-style:none;padding:0;margin:0}
+  ul.docs li{padding:12px 0;border-top:1px solid var(--line);display:flex;gap:12px;align-items:flex-start}
+  ul.docs li:first-child{border-top:none}
+  ul.docs .n{flex:0 0 auto;width:30px;height:30px;border-radius:50%;background:var(--soft2);color:var(--blu-scuro);font-weight:700;display:flex;align-items:center;justify-content:center}
+  .story{background:var(--soft2);border-left:6px solid var(--arancio);border-radius:0 12px 12px 0;padding:18px 22px;margin:0 0 28px;font-size:17px}
+  /* opt-in */
+  .optin{background:linear-gradient(135deg,var(--blu),var(--blu-piu-scuro));color:#fff;border-radius:16px;padding:30px 28px;box-shadow:var(--shadow)}
+  .optin h2{color:#fff;margin:0 0 8px;font-size:24px}
+  .optin p.sub{margin:0 0 18px;color:#EAF1FB}
+  .optin label{display:block;font-weight:600;margin:0 0 6px}
+  .optin .field{margin:0 0 14px}
+  .optin input{width:100%;border:none;border-radius:10px;padding:13px 14px;font-size:16px;font-family:inherit}
+  .optin input:focus-visible{outline:3px solid var(--arancio-chiaro);outline-offset:2px}
+  .optin .privacy{font-size:13.5px;color:#CFE0F5;margin:12px 0 0}
+  .optin .err{background:#FBE4E2;color:#7E1812;border-radius:9px;padding:10px 13px;margin:0 0 14px;display:none}
+  .optin .err.show{display:block}
+  .success{display:none;text-align:center;padding:10px 4px}
+  .success.show{display:block}
+  .success .check{font-size:48px}
+  .note-config{background:#FBEFD6;color:#6F4200;border:1px dashed #E0B255;border-radius:10px;padding:12px 14px;font-size:14px;margin:18px 0 0}
+  footer{color:var(--ink-soft);font-size:14px;border-top:1px solid var(--line);margin-top:10px;padding:22px 0 0}
+  .badge-a2a{font-weight:700;color:var(--blu-scuro)}
+</style>
+</head>
+<body>
+<a class="skip" href="#optin">Salta al modulo</a>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="kick">AccessibilityToAll · Strumento gratuito</p>
+    <h1>Genera gratis la tua Dichiarazione di Accessibilità</h1>
+    <p class="lead">European Accessibility Act e Legge Stanca rendono l'accessibilità un <strong>obbligo di legge</strong>. Ottieni in pochi minuti la <strong>Dichiarazione</strong> ufficiale e il <strong>Report di Conformità</strong> WCAG del tuo sito — gratis.</p>
+    <a class="btn big" href="#optin">Genera la mia dichiarazione →</a>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="grid3">
+    <div class="pt"><div class="ico" aria-hidden="true">⚖️</div><h3>È un obbligo</h3><p>Ogni soggetto interessato deve pubblicare la dichiarazione e provare la conformità. Saltarlo è un rischio concreto.</p></div>
+    <div class="pt"><div class="ico" aria-hidden="true">⏱️</div><h3>In pochi minuti</h3><p>Scansione automatica o compilazione guidata: niente foglio bianco, niente burocrazia.</p></div>
+    <div class="pt"><div class="ico" aria-hidden="true">💙</div><h3>Da chi la vive</h3><p>Non un form qualsiasi: uno strumento di chi l'accessibilità la vive ogni giorno, non la studia sui manuali.</p></div>
+  </div>
+
+  <section class="block" aria-labelledby="h-cosa">
+    <h2 id="h-cosa">Cosa ottieni</h2>
+    <ul class="docs">
+      <li><span class="n">1</span><span><strong>Dichiarazione di Accessibilità</strong> — il documento ufficiale richiesto da EAA/AGID: dati del sito, stato di conformità, sezioni non accessibili e canale di feedback.</span></li>
+      <li><span class="n">2</span><span><strong>Report di Conformità</strong> — l'allegato tecnico con i criteri WCAG 2.1 AA / EN 301 549, gli esiti, le priorità di intervento e i tempi stimati.</span></li>
+    </ul>
+  </section>
+
+  <p class="story">«So cosa significa trovare una barriera dove non dovrebbe esserci. Per questo questo strumento non si limita a sfornare un PDF: ti dà documenti di cui fidarti davvero.» — <strong>Beatrice Biasuzzi, AccessibilityToAll</strong></p>
+
+  <!-- OPT-IN -->
+  <section class="optin" id="optin" aria-labelledby="h-optin">
+    <h2 id="h-optin">Ricevi l'accesso al Generatore</h2>
+    <p class="sub">Lascia il tuo contatto: ti diamo subito l'accesso allo strumento e qualche consiglio pratico sull'EAA. Niente spam.</p>
+    <form id="optinForm" name="generatore-eaa" method="POST" data-netlify="true" netlify-honeypot="bot-field" novalidate>
+      <input type="hidden" name="form-name" value="generatore-eaa">
+      <p hidden aria-hidden="true"><label>Non compilare: <input name="bot-field"></label></p>
+      <div class="err" id="formErr" role="alert"></div>
+      <div class="field">
+        <label for="nome">Nome</label>
+        <input type="text" id="nome" name="nome" autocomplete="given-name" placeholder="Il tuo nome">
+      </div>
+      <div class="field">
+        <label for="email">Email <span aria-hidden="true">*</span><span class="skip">obbligatoria</span></label>
+        <input type="email" id="email" name="email" autocomplete="email" required placeholder="tu@azienda.it" aria-required="true">
+      </div>
+      <button type="submit" class="btn big">Voglio il Generatore gratis →</button>
+      <p class="privacy">Inviando accetti di essere ricontattato da AccessibilityToAll. Puoi cancellarti quando vuoi.</p>
+    </form>
+    <div class="success" id="success" role="status" aria-live="polite">
+      <div class="check" aria-hidden="true">✅</div>
+      <h2>Perfetto! Ecco il tuo accesso</h2>
+      <p class="sub" id="successName">Apri il Generatore e crea i tuoi documenti.</p>
+      <a class="btn big" id="goTool" href="#" target="_blank" rel="noopener">Apri il Generatore →</a>
+    </div>
+  </section>
+
+  <div class="note-config" id="cfgNote">
+    <strong>Da configurare (visibile solo a te):</strong> in cima al codice, imposta
+    <code>GENERATORE_URL</code> con l'indirizzo pubblicato del Generatore. Finché resta vuoto, il
+    pulsante "Apri il Generatore" mostra un avviso. Per raccogliere davvero le email, collega il
+    form al tuo strumento (Brevo, Mailchimp, il tuo funnel): ora i contatti vengono salvati solo
+    nel browser come prova di funzionamento.
+  </div>
+
+  <footer>
+    Strumento di <span class="badge-a2a">AccessibilityToAll</span>. Non è consulenza legale: i documenti sono una bozza professionale da verificare. Per una verifica completa a norma, <a href="https://www.accessibilitytoall.com">parla con noi</a>.
+  </footer>
+</main>
+
+<script>
+"use strict";
+/* ============================================================
+   CONFIG — dopo aver pubblicato il Generatore, incolla qui l'URL:
+   es. "https://tuonome.github.io/generatore-eaa/"
+   ============================================================ */
+var GENERATORE_URL = "generatore.html";
+
+(function(){
+  var $=function(s){return document.querySelector(s);};
+  var form=$('#optinForm'), err=$('#formErr');
+
+  // se l'URL è configurato, nascondi la nota tecnica
+  if(GENERATORE_URL){ var n=$('#cfgNote'); if(n) n.style.display='none'; }
+
+  function validEmail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    err.className='err';
+    var nome=$('#nome').value.trim();
+    var email=$('#email').value.trim();
+    if(!validEmail(email)){
+      err.className='err show'; err.textContent='Inserisci un indirizzo email valido per ricevere l’accesso.';
+      $('#email').focus(); return;
+    }
+    // salvataggio "prova di funzionamento" (da sostituire col tuo provider email)
+    try{
+      var leads=JSON.parse(localStorage.getItem('a2a_leads_generatore')||'[]');
+      leads.push({nome:nome, email:email, ts:new Date().toISOString()});
+      localStorage.setItem('a2a_leads_generatore', JSON.stringify(leads));
+    }catch(_){}
+
+    // invio a Netlify Forms (cattura nativa, nessun backend)
+    try{
+      var body=new URLSearchParams();
+      body.append('form-name','generatore-eaa');
+      body.append('nome',nome); body.append('email',email);
+      fetch('/',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body.toString()});
+    }catch(_){}
+
+    // mostra il successo
+    form.style.display='none';
+    var s=$('#success'); s.classList.add('show');
+    if(nome) $('#successName').textContent='Grazie '+nome+'! Apri il Generatore e crea i tuoi documenti.';
+    var go=$('#goTool');
+    if(GENERATORE_URL){ go.href=GENERATORE_URL; }
+    else{
+      go.href='#';
+      go.addEventListener('click', function(ev){ ev.preventDefault();
+        alert('Configura prima GENERATORE_URL in cima al codice con l’indirizzo pubblicato del Generatore.'); });
+    }
+    if(s.scrollIntoView) s.scrollIntoView({behavior:'smooth',block:'center'});
+  });
+})();
+</script>
+</body>
+</html>
