@@ -95,7 +95,7 @@
   <section class="optin" id="optin" aria-labelledby="h-optin">
     <h2 id="h-optin">Ricevi l'accesso al Generatore</h2>
     <p class="sub">Lascia il tuo contatto: ti diamo subito l'accesso allo strumento e qualche consiglio pratico sull'EAA. Niente spam.</p>
-    <form id="optinForm" name="generatore-eaa" method="POST" data-netlify="true" netlify-honeypot="bot-field" novalidate>
+    <form id="optinForm" name="generatore-eaa" novalidate>
       <input type="hidden" name="form-name" value="generatore-eaa">
       <p hidden aria-hidden="true"><label>Non compilare: <input name="bot-field"></label></p>
       <div class="err" id="formErr" role="alert"></div>
@@ -107,8 +107,11 @@
         <label for="email">Email <span aria-hidden="true">*</span><span class="skip">obbligatoria</span></label>
         <input type="email" id="email" name="email" autocomplete="email" required placeholder="tu@azienda.it" aria-required="true">
       </div>
+      <div class="field">
+        <label><input type="checkbox" id="consenso" name="consenso" required aria-required="true"> Accetto di essere ricontattata o ricontattato da AccessibilityToAll e ho letto l'<a href="https://www.accessibilitytoall.com/privacy" target="_blank" rel="noopener">informativa privacy</a>. <span aria-hidden="true">*</span><span class="skip">obbligatorio</span></label>
+      </div>
       <button type="submit" class="btn big">Voglio il Generatore gratis →</button>
-      <p class="privacy">Inviando accetti di essere ricontattato da AccessibilityToAll. Puoi cancellarti quando vuoi.</p>
+      <p class="privacy">Puoi cancellarti quando vuoi.</p>
     </form>
     <div class="success" id="success" role="status" aria-live="polite">
       <div class="check" aria-hidden="true">✅</div>
@@ -157,6 +160,11 @@ var GENERATORE_URL = "generatore.html";
       err.className='err show'; err.textContent='Inserisci un indirizzo email valido per ricevere l’accesso.';
       $('#email').focus(); return;
     }
+    if(!$('#consenso').checked){
+      err.className='err show'; err.textContent='Per ricevere l’accesso serve il tuo consenso: spunta la casella.';
+      $('#consenso').focus(); return;
+    }
+    if(document.querySelector('[name="bot-field"]').value){ return; }
     // salvataggio "prova di funzionamento" (da sostituire col tuo provider email)
     try{
       var leads=JSON.parse(localStorage.getItem('a2a_leads_generatore')||'[]');
@@ -164,13 +172,44 @@ var GENERATORE_URL = "generatore.html";
       localStorage.setItem('a2a_leads_generatore', JSON.stringify(leads));
     }catch(_){}
 
-    // invio a Netlify Forms (cattura nativa, nessun backend)
-    try{
-      var body=new URLSearchParams();
-      body.append('form-name','generatore-eaa');
-      body.append('nome',nome); body.append('email',email);
-      fetch('/',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body.toString()});
-    }catch(_){}
+    // invio a Talismano (10/10/2026): prima andava a Netlify Forms, che su GitHub Pages non funziona e perdeva i contatti.
+    // Il Generatore si apre solo se l'iscrizione riesce: qui si aspetta la risposta di Talismano.
+    var bottone=form.querySelector('button[type="submit"]'), testoBottone=bottone?bottone.textContent:'';
+    if(bottone){ bottone.disabled=true; bottone.textContent='Un attimo, registro la tua email…'; }
+    form.setAttribute('aria-busy','true');
+    function errore(testo){
+      if(bottone){ bottone.disabled=false; bottone.textContent=testoBottone; }
+      form.removeAttribute('aria-busy');
+      err.className='err show'; err.textContent=testo;
+    }
+    var ctrl=('AbortController' in window)?new AbortController():null;
+    var timer=ctrl?setTimeout(function(){ctrl.abort();},15000):null;
+    fetch('https://svrcjtnjuzqiepzgcfud.supabase.co/rest/v1/rpc/lead_iscrivi',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':'sb_publishable_C4EZ54RQ0HZs_udEeJLODg_vhfBJwth'},
+      body:JSON.stringify({p_email:email,p_modulo:'generatore',p_nome:nome||null,p_consenso:true,p_extra:{fonte:'generatore-eaa'}}),
+      signal:ctrl?ctrl.signal:undefined
+    }).then(function(r){ return r.json().catch(function(){return null;}); }).then(function(j){
+      if(timer) clearTimeout(timer);
+      if(j && j.ok===true){ apriAccesso(); return; }
+      var cod=j&&j.errore;
+      if(cod==='email_non_valida'){ errore('L’indirizzo email non sembra valido: controllalo e riprova.'); $('#email').focus(); }
+      else if(cod==='riprova_tra_poco'){ errore('In questo momento riceviamo molte richieste: riprova tra qualche minuto.'); }
+      else if(cod==='consenso_mancante'){ errore('Per ricevere l’accesso serve il tuo consenso: spunta la casella.'); $('#consenso').focus(); }
+      else { errore('La registrazione della tua email non è riuscita. Riprova tra poco oppure scrivi ad AccessibilityToAll.'); }
+    }).catch(function(){
+      if(timer) clearTimeout(timer);
+      errore('Non riesco a contattare il servizio. Controlla la connessione e riprova tra poco.');
+    });
+  });
+
+  // iscrizione riuscita: lascia nel browser il segno che apre il Generatore e mostra il successo
+  function apriAccesso(){
+    var nome=$('#nome').value.trim();
+    try{ localStorage.setItem('a2a_generatore_accesso', new Date().toISOString()); }catch(_){}
+    try{ document.cookie='a2a_generatore_accesso=1; max-age=31536000; path=/; SameSite=Lax'+(location.protocol==='https:'?'; Secure':''); }catch(_){}
+    form.removeAttribute('aria-busy');
+    err.className='err'; err.textContent='';
 
     // mostra il successo
     form.style.display='none';
@@ -184,7 +223,7 @@ var GENERATORE_URL = "generatore.html";
         alert('Configura prima GENERATORE_URL in cima al codice con l’indirizzo pubblicato del Generatore.'); });
     }
     if(s.scrollIntoView) s.scrollIntoView({behavior:'smooth',block:'center'});
-  });
+  }
 })();
 </script>
 </body>
