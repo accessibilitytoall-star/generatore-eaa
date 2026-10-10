@@ -172,14 +172,44 @@ var GENERATORE_URL = "generatore.html";
       localStorage.setItem('a2a_leads_generatore', JSON.stringify(leads));
     }catch(_){}
 
-    // invio a Talismano (10/10/2026): prima andava a Netlify Forms, che su GitHub Pages non funziona e perdeva i contatti
-    try{
-      fetch('https://svrcjtnjuzqiepzgcfud.supabase.co/rest/v1/rpc/lead_iscrivi',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','apikey':'sb_publishable_C4EZ54RQ0HZs_udEeJLODg_vhfBJwth'},
-        body:JSON.stringify({p_email:email,p_modulo:'generatore',p_nome:nome||null,p_consenso:true,p_extra:{fonte:'generatore-eaa'}})
-      }).catch(function(){});
-    }catch(_){}
+    // invio a Talismano (10/10/2026): prima andava a Netlify Forms, che su GitHub Pages non funziona e perdeva i contatti.
+    // Il Generatore si apre solo se l'iscrizione riesce: qui si aspetta la risposta di Talismano.
+    var bottone=form.querySelector('button[type="submit"]'), testoBottone=bottone?bottone.textContent:'';
+    if(bottone){ bottone.disabled=true; bottone.textContent='Un attimo, registro la tua email…'; }
+    form.setAttribute('aria-busy','true');
+    function errore(testo){
+      if(bottone){ bottone.disabled=false; bottone.textContent=testoBottone; }
+      form.removeAttribute('aria-busy');
+      err.className='err show'; err.textContent=testo;
+    }
+    var ctrl=('AbortController' in window)?new AbortController():null;
+    var timer=ctrl?setTimeout(function(){ctrl.abort();},15000):null;
+    fetch('https://svrcjtnjuzqiepzgcfud.supabase.co/rest/v1/rpc/lead_iscrivi',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':'sb_publishable_C4EZ54RQ0HZs_udEeJLODg_vhfBJwth'},
+      body:JSON.stringify({p_email:email,p_modulo:'generatore',p_nome:nome||null,p_consenso:true,p_extra:{fonte:'generatore-eaa'}}),
+      signal:ctrl?ctrl.signal:undefined
+    }).then(function(r){ return r.json().catch(function(){return null;}); }).then(function(j){
+      if(timer) clearTimeout(timer);
+      if(j && j.ok===true){ apriAccesso(); return; }
+      var cod=j&&j.errore;
+      if(cod==='email_non_valida'){ errore('L’indirizzo email non sembra valido: controllalo e riprova.'); $('#email').focus(); }
+      else if(cod==='riprova_tra_poco'){ errore('In questo momento riceviamo molte richieste: riprova tra qualche minuto.'); }
+      else if(cod==='consenso_mancante'){ errore('Per ricevere l’accesso serve il tuo consenso: spunta la casella.'); $('#consenso').focus(); }
+      else { errore('La registrazione della tua email non è riuscita. Riprova tra poco oppure scrivi ad AccessibilityToAll.'); }
+    }).catch(function(){
+      if(timer) clearTimeout(timer);
+      errore('Non riesco a contattare il servizio. Controlla la connessione e riprova tra poco.');
+    });
+  });
+
+  // iscrizione riuscita: lascia nel browser il segno che apre il Generatore e mostra il successo
+  function apriAccesso(){
+    var nome=$('#nome').value.trim();
+    try{ localStorage.setItem('a2a_generatore_accesso', new Date().toISOString()); }catch(_){}
+    try{ document.cookie='a2a_generatore_accesso=1; max-age=31536000; path=/; SameSite=Lax'+(location.protocol==='https:'?'; Secure':''); }catch(_){}
+    form.removeAttribute('aria-busy');
+    err.className='err'; err.textContent='';
 
     // mostra il successo
     form.style.display='none';
@@ -193,7 +223,7 @@ var GENERATORE_URL = "generatore.html";
         alert('Configura prima GENERATORE_URL in cima al codice con l’indirizzo pubblicato del Generatore.'); });
     }
     if(s.scrollIntoView) s.scrollIntoView({behavior:'smooth',block:'center'});
-  });
+  }
 })();
 </script>
 </body>
