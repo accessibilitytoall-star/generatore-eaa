@@ -51,6 +51,11 @@
   .optin input{width:100%;border:none;border-radius:10px;padding:13px 14px;font-size:16px;font-family:inherit}
   .optin input:focus-visible{outline:3px solid var(--arancio-chiaro);outline-offset:2px}
   .optin .privacy{font-size:13.5px;color:#CFE0F5;margin:12px 0 0}
+  .optin .consenso{display:flex;gap:10px;align-items:flex-start}
+  .optin .consenso input{width:22px;height:22px;flex:0 0 auto;margin:3px 0 0;padding:0}
+  .optin .consenso label{font-weight:400;font-size:15px;margin:0}
+  .optin .consenso a{color:#FFFFFF;text-decoration:underline}
+  .optin button[disabled]{opacity:.75;cursor:wait}
   .optin .err{background:#FBE4E2;color:#7E1812;border-radius:9px;padding:10px 13px;margin:0 0 14px;display:none}
   .optin .err.show{display:block}
   .success{display:none;text-align:center;padding:10px 4px}
@@ -95,10 +100,9 @@
   <section class="optin" id="optin" aria-labelledby="h-optin">
     <h2 id="h-optin">Ricevi l'accesso al Generatore</h2>
     <p class="sub">Lascia il tuo contatto: ti diamo subito l'accesso allo strumento e qualche consiglio pratico sull'EAA. Niente spam.</p>
-    <form id="optinForm" name="generatore-eaa" method="POST" data-netlify="true" netlify-honeypot="bot-field" novalidate>
-      <input type="hidden" name="form-name" value="generatore-eaa">
-      <p hidden aria-hidden="true"><label>Non compilare: <input name="bot-field"></label></p>
-      <div class="err" id="formErr" role="alert"></div>
+    <form id="optinForm" name="generatore-eaa" novalidate>
+      <p hidden aria-hidden="true"><label>Non compilare: <input name="bot-field" id="botField" tabindex="-1" autocomplete="off"></label></p>
+      <div class="err" id="formErr" role="alert" tabindex="-1"></div>
       <div class="field">
         <label for="nome">Nome</label>
         <input type="text" id="nome" name="nome" autocomplete="given-name" placeholder="Il tuo nome">
@@ -107,8 +111,12 @@
         <label for="email">Email <span aria-hidden="true">*</span><span class="skip">obbligatoria</span></label>
         <input type="email" id="email" name="email" autocomplete="email" required placeholder="tu@azienda.it" aria-required="true">
       </div>
-      <button type="submit" class="btn big">Voglio il Generatore gratis →</button>
-      <p class="privacy">Inviando accetti di essere ricontattato da AccessibilityToAll. Puoi cancellarti quando vuoi.</p>
+      <div class="field consenso">
+        <input type="checkbox" id="consenso" name="consenso" required aria-required="true" aria-describedby="consensoNota">
+        <label for="consenso">Ho letto l'<a href="https://mcp-base-vercel.vercel.app/privacy-policy.html" target="_blank" rel="noopener">informativa sulla privacy<span class="skip"> (si apre in una nuova scheda)</span></a> e accetto di ricevere da AccessibilityToAll l'accesso al Generatore e consigli sull'EAA via email. <span aria-hidden="true">*</span></label>
+      </div>
+      <button type="submit" class="btn big" id="btnInvia">Voglio il Generatore gratis →</button>
+      <p class="privacy" id="consensoNota">Il consenso è obbligatorio per ricevere l'accesso. Puoi cancellarti quando vuoi con il link in fondo a ogni email.</p>
     </form>
     <div class="success" id="success" role="status" aria-live="polite">
       <div class="check" aria-hidden="true">✅</div>
@@ -118,16 +126,9 @@
     </div>
   </section>
 
-  <div class="note-config" id="cfgNote">
-    <strong>Da configurare (visibile solo a te):</strong> in cima al codice, imposta
-    <code>GENERATORE_URL</code> con l'indirizzo pubblicato del Generatore. Finché resta vuoto, il
-    pulsante "Apri il Generatore" mostra un avviso. Per raccogliere davvero le email, collega il
-    form al tuo strumento (Brevo, Mailchimp, il tuo funnel): ora i contatti vengono salvati solo
-    nel browser come prova di funzionamento.
-  </div>
-
   <footer>
     Strumento di <span class="badge-a2a">AccessibilityToAll</span>. Non è consulenza legale: i documenti sono una bozza professionale da verificare. Per una verifica completa a norma, <a href="https://www.accessibilitytoall.com">parla con noi</a>.
+    · <a href="https://mcp-base-vercel.vercel.app/privacy-policy.html">Privacy policy</a>
   </footer>
 </main>
 
@@ -139,40 +140,26 @@
    ============================================================ */
 var GENERATORE_URL = "generatore.html";
 
+/* Invio contatti: stessa funzione pubblica usata dai moduli del sito nuovo
+   (lead_iscrivi nel database Talismano/Base). La chiave è quella pubblica. */
+var LEAD_URL = "https://svrcjtnjuzqiepzgcfud.supabase.co/rest/v1/rpc/lead_iscrivi";
+var LEAD_KEY = "sb_publishable_C4EZ54RQ0HZs_udEeJLODg_vhfBJwth";
+
 (function(){
   var $=function(s){return document.querySelector(s);};
-  var form=$('#optinForm'), err=$('#formErr');
-
-  // se l'URL è configurato, nascondi la nota tecnica
-  if(GENERATORE_URL){ var n=$('#cfgNote'); if(n) n.style.display='none'; }
+  var form=$('#optinForm'), err=$('#formErr'), btn=$('#btnInvia');
+  var testoBtn=btn.textContent;
 
   function validEmail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
 
-  form.addEventListener('submit', function(e){
-    e.preventDefault();
-    err.className='err';
-    var nome=$('#nome').value.trim();
-    var email=$('#email').value.trim();
-    if(!validEmail(email)){
-      err.className='err show'; err.textContent='Inserisci un indirizzo email valido per ricevere l’accesso.';
-      $('#email').focus(); return;
-    }
-    // salvataggio "prova di funzionamento" (da sostituire col tuo provider email)
-    try{
-      var leads=JSON.parse(localStorage.getItem('a2a_leads_generatore')||'[]');
-      leads.push({nome:nome, email:email, ts:new Date().toISOString()});
-      localStorage.setItem('a2a_leads_generatore', JSON.stringify(leads));
-    }catch(_){}
+  function mostraErrore(testo, campo){
+    err.textContent=testo;
+    err.className='err show';
+    if(campo){ campo.setAttribute('aria-invalid','true'); campo.focus(); }
+    else { err.focus(); }
+  }
 
-    // invio a Netlify Forms (cattura nativa, nessun backend)
-    try{
-      var body=new URLSearchParams();
-      body.append('form-name','generatore-eaa');
-      body.append('nome',nome); body.append('email',email);
-      fetch('/',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body.toString()});
-    }catch(_){}
-
-    // mostra il successo
+  function mostraSuccesso(nome){
     form.style.display='none';
     var s=$('#success'); s.classList.add('show');
     if(nome) $('#successName').textContent='Grazie '+nome+'! Apri il Generatore e crea i tuoi documenti.';
@@ -184,6 +171,46 @@ var GENERATORE_URL = "generatore.html";
         alert('Configura prima GENERATORE_URL in cima al codice con l’indirizzo pubblicato del Generatore.'); });
     }
     if(s.scrollIntoView) s.scrollIntoView({behavior:'smooth',block:'center'});
+    var h=s.querySelector('h2'); if(h){ h.setAttribute('tabindex','-1'); h.focus(); }
+  }
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    err.className='err'; err.textContent='';
+    var campoEmail=$('#email'), campoConsenso=$('#consenso');
+    campoEmail.removeAttribute('aria-invalid'); campoConsenso.removeAttribute('aria-invalid');
+    var nome=$('#nome').value.trim();
+    var email=campoEmail.value.trim();
+    if(!validEmail(email)){
+      mostraErrore('Inserisci un indirizzo email valido per ricevere l’accesso.', campoEmail); return;
+    }
+    if(!campoConsenso.checked){
+      mostraErrore('Per ricevere l’accesso spunta la casella del consenso: senza consenso non possiamo scriverti.', campoConsenso); return;
+    }
+    // trappola anti-robot: se il campo nascosto è compilato non inviamo nulla
+    if($('#botField').value){ mostraSuccesso(nome); return; }
+
+    btn.disabled=true; btn.textContent='Invio in corso…'; form.setAttribute('aria-busy','true');
+    function riattiva(){ btn.disabled=false; btn.textContent=testoBtn; form.removeAttribute('aria-busy'); }
+
+    fetch(LEAD_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':LEAD_KEY,'Authorization':'Bearer '+LEAD_KEY},
+      body:JSON.stringify({p_email:email,p_modulo:'generatore',p_nome:nome||null,p_consenso:true,p_messaggio:null,p_extra:{fonte:'generatore-eaa'}})
+    }).then(function(r){
+      return r.json().catch(function(){ return null; }).then(function(d){ return {ok:r.ok, d:d}; });
+    }).then(function(res){
+      riattiva();
+      if(res.ok && res.d && res.d.ok){ mostraSuccesso(nome); return; }
+      var codice=res.d && res.d.errore;
+      if(codice==='email_non_valida') mostraErrore('L’indirizzo email non sembra corretto: controllalo e riprova.', campoEmail);
+      else if(codice==='consenso_mancante') mostraErrore('Per ricevere l’accesso spunta la casella del consenso.', campoConsenso);
+      else if(codice==='riprova_tra_poco') mostraErrore('In questo momento riceviamo molte richieste. Riprova tra qualche minuto, per favore.');
+      else mostraErrore('Non siamo riusciti a registrare il tuo contatto. Riprova tra poco oppure scrivici a accessibilitytoall@gmail.com.');
+    }).catch(function(){
+      riattiva();
+      mostraErrore('Invio non riuscito: controlla la connessione a internet e riprova. Se il problema continua, scrivici a accessibilitytoall@gmail.com.');
+    });
   });
 })();
 </script>
